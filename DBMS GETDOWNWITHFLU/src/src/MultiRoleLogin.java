@@ -1,153 +1,579 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.sql.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.Vector;
+import javax.swing.table.DefaultTableModel;
 
-//Εδώ ξεκινάει η φόρμα εισόδου με credentials πολλαπλών ρόλων
 public class MultiRoleLogin {
-	// JDBC URL, username, and password
 	private static final String DB_URL = "jdbc:mysql://localhost:3306/getdownwithflu";
 	private static final String DB_USER = "root";
 	private static final String DB_PASSWORD = "Govo1986";
-//Εδώ ξεκινά η Main
+
 	public static void main(String[] args) {
-		new MultiRoleLogin().createLoginForm();
+		SwingUtilities.invokeLater(() -> new MultiRoleLogin().createLoginForm());
 	}
 
 	public void createLoginForm() {
 		JFrame frame = new JFrame("Φόρμα εισόδου");
-		frame.setSize(1200, 800);
+		frame.setSize(400, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setLocationRelativeTo(null);
-		frame.setLayout(null);
+		frame.setLayout(new BorderLayout());
 
-		// Components
+		JPanel panel = new JPanel(new GridBagLayout());
+		frame.add(panel, BorderLayout.CENTER);
+
 		JLabel lblTitle = new JLabel("Σύνδεση");
 		lblTitle.setFont(new Font("Arial", Font.BOLD, 20));
-		lblTitle.setBounds(160, 20, 200, 30);
-		frame.add(lblTitle);
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 0;
+		gbc.gridwidth = 2;
+		gbc.insets = new Insets(10, 10, 20, 10);
+		panel.add(lblTitle, gbc);
 
 		JLabel lblUsername = new JLabel("Όνομα χρήστη:");
-		lblUsername.setBounds(50, 70, 100, 30);
-		frame.add(lblUsername);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 1;
+		gbc.insets = new Insets(5, 10, 5, 10);
+		panel.add(lblUsername, gbc);
 
 		JTextField txtUsername = new JTextField();
-		txtUsername.setBounds(150, 70, 180, 30);
-		frame.add(txtUsername);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 1;
+		gbc.gridy = 1;
+		gbc.weightx = 1.0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.insets = new Insets(5, 10, 5, 10);
+		panel.add(txtUsername, gbc);
 
 		JLabel lblPassword = new JLabel("Κωδικός:");
-		lblPassword.setBounds(50, 120, 100, 30);
-		frame.add(lblPassword);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 2;
+		gbc.insets = new Insets(5, 10, 5, 10);
+		panel.add(lblPassword, gbc);
 
 		JPasswordField txtPassword = new JPasswordField();
-		txtPassword.setBounds(150, 120, 180, 30);
-		frame.add(txtPassword);
+		gbc = new GridBagConstraints();
+		gbc.gridx = 1;
+		gbc.gridy = 2;
+		gbc.weightx = 1.0;
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.insets = new Insets(5, 10, 5, 10);
+		panel.add(txtPassword, gbc);
 
-		JButton btnLogin = new JButton("Login");
-		btnLogin.setBounds(150, 180, 100, 30);
-		frame.add(btnLogin);
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		gbc = new GridBagConstraints();
+		gbc.gridx = 0;
+		gbc.gridy = 3;
+		gbc.gridwidth = 2;
+		gbc.insets = new Insets(20, 10, 10, 10);
+		panel.add(buttonPanel, gbc);
+
+		JButton btnLogin = new JButton("Σύνδεση");
+		btnLogin.addActionListener(e -> {
+			String username = txtUsername.getText();
+			String password = new String(txtPassword.getPassword());
+
+			if (username.isEmpty() || password.isEmpty()) {
+				JOptionPane.showMessageDialog(frame, "Συμπληρώστε όλα τα πεδία!", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			} else {
+				authenticateUser(username, password, frame);
+			}
+		});
+		buttonPanel.add(btnLogin);
 
 		JButton btnClose = new JButton("Close");
-		btnClose.setBounds(270, 180, 100, 30);
-		frame.add(btnClose);
-
-		// Button Actions
-		btnLogin.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				String username = txtUsername.getText();
-				String password = new String(txtPassword.getPassword());
-
-				if (username.isEmpty() || password.isEmpty()) {
-					JOptionPane.showMessageDialog(frame, "Συμπληρώστε όλα τα πεδία!", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
-				} else {
-					authenticateUser(username, password, frame);
-				}
-			}
-		});
-
-		btnClose.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				System.exit(0);
-			}
-		});
+		btnClose.addActionListener(e -> System.exit(0));
+		buttonPanel.add(btnClose);
 
 		frame.setVisible(true);
 	}
 
 	private void authenticateUser(String username, String password, JFrame frame) {
-		try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-			String query = "SELECT role FROM user WHERE username = ? AND password = ?";
-			PreparedStatement preparedStatement = connection.prepareStatement(query);
+		try (Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+			 PreparedStatement preparedStatement = connection.prepareStatement("SELECT role FROM user WHERE username = ? AND password = ?")) {
+
 			preparedStatement.setString(1, username);
 			preparedStatement.setString(2, password);
 
-			ResultSet resultSet = preparedStatement.executeQuery();
-			if (resultSet.next()) {
-				String role = resultSet.getString("role");
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					String role = resultSet.getString("role");
 
-				switch (role.toLowerCase()) {
-					case "admin":
-						JOptionPane.showMessageDialog(frame, "Συγχαρητήρια! Εισήλθατε ως διαχειριστής");
-						new AdminWindow();
-						break;
-					case "analyst":
-						JOptionPane.showMessageDialog(frame, "Είσοδος ως αναλυτής!");
-						new AnalystWindow();
-						break;
-					case "simpleuser":
-						JOptionPane.showMessageDialog(frame, "Είσοδος ως επισκέπτης!");
-						new SimpleUserWindow();
-						break;
+					SwingUtilities.invokeLater(() -> {
+						frame.dispose();
+						switch (role.toLowerCase()) {
+							case "admin":
+								new AdminWindow();
+								break;
+							case "analyst":
+								new AnalystWindow();
+								break;
+							case "simpleuser":
+								new SimpleUserWindow();
+								break;
+						}
+					});
+				} else {
+					JOptionPane.showMessageDialog(frame, "Εσφαλμένα στοιχεία εισόδου!", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
 				}
-				frame.dispose();
-			} else {
-				JOptionPane.showMessageDialog(frame, "Εσφαλμένα στοιχεία εισόδου!", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
 			}
 		} catch (SQLException ex) {
+			JOptionPane.showMessageDialog(frame, "Σφάλμα σύνδεσης με τη βάση δεδομένων: " + ex.getMessage(), "Σφάλμα", JOptionPane.ERROR_MESSAGE);
 			ex.printStackTrace();
-			JOptionPane.showMessageDialog(frame, "Αποτυχία !", "Error", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 }
 
-// Admin window
 class AdminWindow extends JFrame {
-	AdminWindow() {
+	JPanel panel;
+	JTable diseasesTable, countriesTable, reportsTable;
+	JTextField iddiseasesTextField, nameTextField, descriptionTextField, dateTextField;
+	JTextField idcountriesTextField, countryNameTextField, continentTextField, populationTextField;
+	JTextField idreportTextField, commentTextField, reportDateTextField;
+	JButton addDiseasesButton, updateDiseasesButton, deleteDiseasesButton;
+	JButton addCountryButton, updateCountryButton, deleteCountryButton;
+	JButton addReportButton, updateReportButton, deleteReportButton;
+
+	public AdminWindow() {
 		setTitle("Περιβάλλον Διαχείρισης");
-		setSize(400, 300);
+		setSize(1200, 800);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
-		JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
-		add(label);
-		setVisible(true);
-	}
-}
 
-// Analyst window
-class AnalystWindow extends JFrame {
-	AnalystWindow() {
-		setTitle("Περιβάλλον Αναλύσεων");
-		setSize(400, 300);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLocationRelativeTo(null);
-		JLabel label = new JLabel("Καλωσήλθατε", JLabel.CENTER);
-		add(label);
-		setVisible(true);
-	}
-}
+		panel = new JPanel(new GridBagLayout());
+		add(panel);
 
-// Simple User window
-class SimpleUserWindow extends JFrame {
-	SimpleUserWindow() {
-		setTitle("Περιβάλλον επισκέπτη");
-		setSize(400, 300);
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setLocationRelativeTo(null);
-		JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
-		add(label);
+		createUIComponents();
+		updateDiseasesTable();
+
+
+
 		setVisible(true);
 	}
-}
+
+	private void createUIComponents() {
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(5, 5, 5, 5);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+
+
+		// ** Ασθένειες - Diseases Form **
+		JLabel iddiseasesLabel = new JLabel("Κωδικός ασθένειας:");
+		gbc.gridx = 0; gbc.gridy = 0; panel.add(iddiseasesLabel, gbc);
+		iddiseasesTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 0; panel.add(iddiseasesTextField, gbc);
+
+		JLabel nameLabel = new JLabel("Όνομα:");
+		gbc.gridx = 0; gbc.gridy = 1; panel.add(nameLabel, gbc);
+		nameTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 1; panel.add(nameTextField, gbc);
+
+		JLabel descriptionLabel = new JLabel("Περιγραφή:");
+		gbc.gridx = 0; gbc.gridy = 2; panel.add(descriptionLabel, gbc);
+		descriptionTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 2; panel.add(descriptionTextField, gbc);
+
+		JLabel dateLabel = new JLabel("Ημερομηνία:");
+		gbc.gridx = 0; gbc.gridy = 3; panel.add(dateLabel, gbc);
+		dateTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 3; panel.add(dateTextField, gbc);
+
+		addDiseasesButton = new JButton("Προσθήκη");
+		updateDiseasesButton = new JButton("Επικαιροποίηση");
+		deleteDiseasesButton = new JButton("Διαγραφή");
+
+		JPanel diseasesButtonPanel = new JPanel(); // Create the panel for the buttons
+		diseasesButtonPanel.add(addDiseasesButton);
+		diseasesButtonPanel.add(updateDiseasesButton);
+		diseasesButtonPanel.add(deleteDiseasesButton);
+
+
+		gbc.gridx = 0;
+		gbc.gridy = 4;
+		gbc.gridwidth = 2;
+		panel.add(diseasesButtonPanel, gbc);
+
+
+
+		String[] diseasesColumns = {"ID", "Όνομα", "Περιγραφή", "Ημερομηνία"};
+		DefaultTableModel diseasesModel = new DefaultTableModel(diseasesColumns, 0);
+		diseasesTable = new JTable(diseasesModel);
+
+		int rowHeight = 25;
+		diseasesTable.setRowHeight(rowHeight);
+
+		int visibleRows = 5;
+		diseasesTable.setPreferredScrollableViewportSize(new Dimension(400, visibleRows * rowHeight));
+		diseasesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+		JScrollPane diseasesScrollPane = new JScrollPane(diseasesTable);
+
+		gbc.gridx = 0;
+		gbc.gridy = 5; // Correct gridy value
+		gbc.gridwidth = 2;
+		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
+		gbc.weighty = 1.0; // Give it vertical weight
+		panel.add(diseasesScrollPane, gbc);
+
+		gbc = new GridBagConstraints(); // VERY IMPORTANT!
+		gbc.insets = new Insets(5, 5, 5, 5);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.weightx = 1.0;
+
+
+		diseasesTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				JTableMouseClicked(e);
+			}
+		});
+
+		addDiseasesButton.addActionListener(e -> jbtnAddNewActionPerformed(e));
+		updateDiseasesButton.addActionListener(e -> jbtnUpdateActionPerformed(e));
+		deleteDiseasesButton.addActionListener(e -> jbtnDeleteActionPerformed(e));
+
+
+		// ** Χώρες - Countries Form **
+		JLabel idcountriesLabel = new JLabel("Κωδικός χώρας:");
+		gbc.gridx = 0; gbc.gridy = 6; panel.add(idcountriesLabel, gbc);
+		idcountriesTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 6; panel.add(idcountriesTextField, gbc);
+
+		JLabel countryNameLabel = new JLabel("Χώρα:");
+		gbc.gridx = 0; gbc.gridy = 7; panel.add(countryNameLabel, gbc);
+		countryNameTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 7; panel.add(countryNameTextField, gbc);
+
+		JLabel continentLabel = new JLabel("Ήπειρος:");
+		gbc.gridx = 0; gbc.gridy = 8; panel.add(continentLabel, gbc);
+		continentTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 8; panel.add(continentTextField, gbc);
+
+		JLabel populationLabel = new JLabel("Πληθυσμός:");
+		gbc.gridx = 0; gbc.gridy = 9; panel.add(populationLabel, gbc);
+		populationTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 9; panel.add(populationTextField, gbc);
+
+		addCountryButton = new JButton("Προσθήκη");
+		updateCountryButton = new JButton("Επικαιροποίηση");
+		deleteCountryButton = new JButton("Διαγραφή");
+
+		gbc.gridx = 0; gbc.gridy = 10; gbc.gridwidth = 2;
+		JPanel countryButtonPanel = new JPanel();
+		countryButtonPanel.add(addCountryButton);
+		countryButtonPanel.add(updateCountryButton);
+		countryButtonPanel.add(deleteCountryButton);
+		panel.add(countryButtonPanel, gbc);
+
+		String[] countryColumns = {"ID", "Χώρα", "Ήπειρος", "Πληθυσμός"};
+		DefaultTableModel countriesModel = new DefaultTableModel(countryColumns, 0);
+		countriesTable = new JTable(countriesModel);
+		JScrollPane countriesScrollPane = new JScrollPane(countriesTable);
+
+		int rowCountriesHeight = 25;
+		countriesTable.setRowHeight(rowCountriesHeight);
+
+		int visibleCountriesRows = 5;
+		countriesTable.setPreferredScrollableViewportSize(new Dimension(400, visibleRows * rowCountriesHeight));
+		countriesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+
+
+		gbc.gridx = 0;
+		gbc.gridy = 11; // Correct gridy value
+		gbc.gridwidth = 2;
+		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
+		gbc.weighty = 1.0; // Give it vertical weight
+		panel.add(countriesScrollPane, gbc);
+
+		gbc = new GridBagConstraints();
+		gbc.insets = new Insets(5, 5, 5, 5);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.weightx = 1.0;
+
+
+
+		countriesTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				//CountriesTableMouseClicked(e);
+			}
+		});
+
+
+		//addCountryButton.addActionListener(e -> jbtnAddCountryActionPerformed(e));
+		//updateCountryButton.addActionListener(e -> jbtnUpdateCountryActionPerformed(e));
+		//deleteCountryButton.addActionListener(e -> jbtnDeleteCountryActionPerformed(e));
+
+		// ** Αναφορές - Reports Form **
+		JLabel idreportLabel = new JLabel("Κωδικός αναφοράς:");
+		gbc.gridx = 0; gbc.gridy = 12; panel.add(idreportLabel, gbc);
+		idreportTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 12; panel.add(idreportTextField, gbc);
+
+		JLabel commentLabel = new JLabel("Σχόλιο:");
+		gbc.gridx = 0; gbc.gridy = 13; panel.add(commentLabel, gbc);
+		commentTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 13; panel.add(commentTextField, gbc);
+
+		JLabel reportDateLabel = new JLabel("Ημερομηνία:");
+		gbc.gridx = 0; gbc.gridy = 14; panel.add(reportDateLabel, gbc);
+		reportDateTextField = new JTextField(15);
+		gbc.gridx = 1; gbc.gridy = 14; panel.add(reportDateTextField, gbc);
+
+		addReportButton = new JButton("Προσθήκη");
+		updateReportButton = new JButton("Επικαιροποίηση");
+		deleteReportButton = new JButton("Διαγραφή");
+
+		gbc.gridx = 0; gbc.gridy = 15; gbc.gridwidth = 2;
+		JPanel reportButtonPanel = new JPanel();
+		reportButtonPanel.add(addReportButton);
+		reportButtonPanel.add(updateReportButton);
+		reportButtonPanel.add(deleteReportButton);
+		panel.add(reportButtonPanel, gbc);
+
+		String[] reportColumns = {"ID", "Χώρα", "Ήπειρος", "Πληθυσμός"};
+		DefaultTableModel reportsModel = new DefaultTableModel(reportColumns, 0);
+		reportsTable = new JTable(reportsModel);
+		JScrollPane reportsScrollPane = new JScrollPane(reportsTable);
+
+		int rowReportsHeight = 25;
+		reportsTable.setRowHeight(rowReportsHeight);
+
+		int visibleReportsRows = 5;
+		reportsTable.setPreferredScrollableViewportSize(new Dimension(400, visibleRows * rowReportsHeight));
+		reportsTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+
+		gbc.gridx = 0;
+		gbc.gridy = 16; // Correct gridy value
+		gbc.gridwidth = 2;
+		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
+		gbc.weighty = 1.0; // Give it vertical weight
+		panel.add(reportsScrollPane, gbc);
+
+		gbc = new GridBagConstraints();
+		gbc.insets = new Insets(5, 5, 5, 5);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+		gbc.weightx = 1.0;
+
+
+
+
+
+		reportsTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				//ReportsTableMouseClicked(e);
+			}
+		});
+
+		//addReportButton.addActionListener(e -> jbtnAddReportActionPerformed(e));
+		//updateReportButton.addActionListener(e -> jbtnUpdateReportActionPerformed(e));
+		//deleteReportButton.addActionListener(e -> jbtnDeleteReportActionPerformed(e));
+	}
+
+	public void updateDiseasesTable() {
+		try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986");
+			 PreparedStatement pst = sqlConn.prepareStatement("SELECT * FROM diseases");
+			 ResultSet rs = pst.executeQuery()) {
+
+			DefaultTableModel model = (DefaultTableModel) diseasesTable.getModel();
+			model.setRowCount(0);
+
+			while (rs.next()) {
+				Vector<Object> columnData = new Vector<>();
+				columnData.add(rs.getInt("iddiseases"));
+				columnData.add(rs.getString("name"));
+				columnData.add(rs.getString("description"));
+				columnData.add(rs.getDate("discovery_date"));
+
+				model.addRow(columnData.toArray());
+			}
+		} catch (SQLException ex) {
+			JOptionPane.showMessageDialog(null, "Σφάλμα: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+
+	private void jbtnAddNewActionPerformed(java.awt.event.ActionEvent evt) {
+		try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986");
+			 PreparedStatement pst = sqlConn.prepareStatement("INSERT INTO diseases (iddiseases, name, description, discovery_date) VALUES (?, ?, ?, ?)")) {
+
+			try {
+				int id = Integer.parseInt(iddiseasesTextField.getText());
+				if (id <= 0) {
+					JOptionPane.showMessageDialog(this, "Το Id δεν μπορεί να πάρει αρνητική τιμή.", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				pst.setInt(1, id);
+
+			} catch (NumberFormatException ex) {
+				JOptionPane.showMessageDialog(this, "Παρακαλώ εισάγετε έγκυρο αριθμό.", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			pst.setString(2, nameTextField.getText());
+			pst.setString(3, descriptionTextField.getText());
+
+			try {
+				LocalDate discoveryDate = LocalDate.parse(dateTextField.getText());
+				pst.setDate(4, java.sql.Date.valueOf(discoveryDate));
+			} catch (DateTimeParseException ex) {
+				JOptionPane.showMessageDialog(this, "Η ημερομηνία πρέπει να είναι της μορφής: YYYY-MM-DD.", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			int rowsAffected = pst.executeUpdate();
+			if (rowsAffected > 0) {
+				JOptionPane.showMessageDialog(this, "Η καταχώριση προστέθηκε");
+				updateDiseasesTable();
+				clearDiseaseFields();
+			} else {
+				JOptionPane.showMessageDialog(this, "Η καταχώριση απέτυχε");
+			}
+
+		} catch (SQLException | NumberFormatException ex) {
+			JOptionPane.showMessageDialog(this, "Αποτυχία! " + ex.getMessage(), "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+
+	private void clearDiseaseFields() {
+		iddiseasesTextField.setText("");
+		nameTextField.setText("");
+		descriptionTextField.setText("");
+		dateTextField.setText("");
+	}
+
+	private void jbtnUpdateActionPerformed(java.awt.event.ActionEvent evt) {
+		int selectedRow = diseasesTable.getSelectedRow();
+		if (selectedRow == -1) {
+			JOptionPane.showMessageDialog(this, "Επιλέξτε τι θέλετε να επικαιροποιήσετε", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986");
+			 PreparedStatement pst = sqlConn.prepareStatement("UPDATE diseases SET name = ?, description = ?, discovery_date = ? WHERE iddiseases = ?")) {
+
+			pst.setString(1, nameTextField.getText());
+			pst.setString(2, descriptionTextField.getText());
+			try {
+				LocalDate discoveryDate = LocalDate.parse(dateTextField.getText());
+				pst.setDate(3, java.sql.Date.valueOf(discoveryDate));
+			} catch (DateTimeParseException ex) {
+				JOptionPane.showMessageDialog(this, "Η ημεορμηνία πρέπει να είναι της μορφής: YYYY-MM-DD.", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			try {
+				int id = Integer.parseInt(iddiseasesTextField.getText());
+				if (id <= 0) {
+					JOptionPane.showMessageDialog(this, "Το Id δεν μπορεί να λάβει αρνητική τιμή.", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
+				pst.setInt(4, id);
+
+			} catch (NumberFormatException ex) {
+				JOptionPane.showMessageDialog(this, "Μη έγκυρη τιμή", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+
+			int rowsAffected = pst.executeUpdate();
+			if (rowsAffected > 0) {
+				JOptionPane.showMessageDialog(this, "Η καταχώριση άλλαξε");
+				updateDiseasesTable();
+			} else {
+				JOptionPane.showMessageDialog(this, "Η καταχώριση δεν βρέθηκε για ενημέρωση.");
+			}
+
+		} catch (SQLException | NumberFormatException ex) {
+			JOptionPane.showMessageDialog(this, "Αποτυχία: " + ex.getMessage(), "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+
+	private void jbtnDeleteActionPerformed(java.awt.event.ActionEvent evt) {
+		int selectedRow = diseasesTable.getSelectedRow();
+		if (selectedRow == -1) {
+			JOptionPane.showMessageDialog(this, "Επιλέξτε τη γραμμή που θέλετε να διαγράψετε", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		try {
+			int iddiseases = Integer.parseInt(diseasesTable.getValueAt(selectedRow, 0).toString());
+			int deleteItem = JOptionPane.showConfirmDialog(null, "Σίγουρα επιθυμείτε τη διαγραφή;", "Προειδοποίηση", JOptionPane.YES_NO_OPTION);
+			if (deleteItem == JOptionPane.YES_OPTION) {
+				try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986");
+					 PreparedStatement pst = sqlConn.prepareStatement("DELETE FROM diseases WHERE iddiseases = ?")) {
+
+					pst.setInt(1, iddiseases);
+					int rowsAffected = pst.executeUpdate();
+					if (rowsAffected > 0) {
+						JOptionPane.showMessageDialog(this, "H καταχώριση διαγράφηκε");
+						updateDiseasesTable();
+						clearDiseaseFields();
+					} else {
+						JOptionPane.showMessageDialog(this, "Η καταχώριση δεν βρέθηκε για διαγραφή.");
+					}
+				}
+			}
+		} catch (SQLException | NumberFormatException ex) {
+			JOptionPane.showMessageDialog(this, "Δεν μπορείτε να διαγράψετε την εγγραφή αυτή: " + ex.getMessage(), "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+
+	private void JTableMouseClicked(java.awt.event.MouseEvent evt) {
+		int selectedRow = diseasesTable.getSelectedRow();
+		if (selectedRow != -1) {
+			DefaultTableModel model = (DefaultTableModel) diseasesTable.getModel();
+			iddiseasesTextField.setText(model.getValueAt(selectedRow, 0).toString());
+			nameTextField.setText(model.getValueAt(selectedRow, 1).toString());
+			descriptionTextField.setText(model.getValueAt(selectedRow, 2).toString());
+			dateTextField.setText(model.getValueAt(selectedRow, 3).toString());
+		}
+	}
+
+
+
+
+
+
+		}
+
+
+
+	// Παράθυρο Αναλυτή
+	class AnalystWindow extends JFrame {
+		AnalystWindow() {
+			setTitle("Περιβάλλον Αναλύσεων");
+			setSize(400, 300);
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			setLocationRelativeTo(null);
+			JLabel label = new JLabel("Καλωσήλθατε", JLabel.CENTER);
+			add(label);
+			setVisible(true);
+		}
+	}
+
+	// Παράθυρο επισκέπτη
+	class SimpleUserWindow extends JFrame {
+		SimpleUserWindow() {
+			setTitle("Περιβάλλον επισκέπτη");
+			setSize(400, 300);
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			setLocationRelativeTo(null);
+			JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
+			add(label);
+			setVisible(true);
+		}
+	}
+
