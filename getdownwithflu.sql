@@ -65,7 +65,7 @@ CREATE TABLE `diseases` (
 
 LOCK TABLES `diseases` WRITE;
 /*!40000 ALTER TABLE `diseases` DISABLE KEYS */;
-INSERT INTO `diseases` VALUES (1,'Alzheimer\'s Disease','A progressive neurological disorder impairing memory and cognition.','1948-04-04'),(2,'Hepatitis A','A viral infection affecting the liver, potentially chronic.','1933-09-09'),(3,'Malaria','A mosquito-borne disease caused by parasitic infection.','1931-01-27'),(4,'Dengue','A viral illness spread by mosquitoes, causing fever and pain.','1973-04-17'),(5,'Tuberculosis','A bacterial infection primarily affecting the lungs.','1996-08-14'),(6,'COVID-19','A contagious viral respiratory illness.','1947-05-23'),(7,'Tubern2','A bacterial infection primarily affecting the lungs.','2023-04-27'),(8,'Muokarditis','Serious infection in heart','1984-12-22'),(9,'Hepatitis B','A viral infection affecting the liver, potentially chronic.','1934-04-11'),(10,'Influenza','Influenza, commonly known as the flu, is a contagious respiratory illness caused by influenza viruses. It typically affects the nose, throat, and lungs, leading to symptoms such as fever, chills, cough, sore throat, muscle aches, fatigue, and nasal congestion. The flu spreads through respiratory droplets when an infected person coughs, sneezes, or talks, and it can range from mild to severe, sometimes resulting in complications like pneumonia. Vaccination is the primary method of prevention.','1944-11-14');
+INSERT INTO `diseases` VALUES (1,'Alzheimer\'s Diseases','A progressive neurological disorder impairing memory and cognition.','1948-04-04'),(2,'Hepatitis A','A viral infection affecting the liver, potentially chronic.','1933-09-09'),(3,'Malaria','A mosquito-borne disease caused by parasitic infection.','1931-01-27'),(4,'Dengue','A viral illness spread by mosquitoes, causing fever and pain.','1973-04-17'),(5,'Tuberculosi','A bacterial infection primarily affecting the lungs.','1996-08-14'),(6,'COVID-19','A contagious viral respiratory illness.','1947-05-23'),(7,'Tubern2','A bacterial infection primarily affecting the lungs.','2023-04-27'),(8,'Muokarditis','Serious infection in heart','1984-12-22'),(9,'Hepatitis B','A viral infection affecting the liver, potentially chronic.','1934-04-11'),(10,'Influenza','Influenza, commonly known as the flu, is a contagious respiratory illness caused by influenza viruses. It typically affects the nose, throat, and lungs, leading to symptoms such as fever, chills, cough, sore throat, muscle aches, fatigue, and nasal congestion. The flu spreads through respiratory droplets when an infected person coughs, sneezes, or talks, and it can range from mild to severe, sometimes resulting in complications like pneumonia. Vaccination is the primary method of prevention.','1944-11-14');
 /*!40000 ALTER TABLE `diseases` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -111,9 +111,9 @@ DROP TABLE IF EXISTS `reports`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reports` (
   `idreport` int NOT NULL,
-  `fk_user_id` int NOT NULL,
-  `fk_id_deseases_rep` int NOT NULL,
-  `fk_id_country_report` int NOT NULL,
+  `fk_user_id` int DEFAULT NULL,
+  `fk_id_deseases_rep` int DEFAULT NULL,
+  `fk_id_country_report` int DEFAULT NULL,
   `comment` text NOT NULL,
   `report_date` date NOT NULL,
   PRIMARY KEY (`idreport`),
@@ -133,7 +133,7 @@ CREATE TABLE `reports` (
 
 LOCK TABLES `reports` WRITE;
 /*!40000 ALTER TABLE `reports` DISABLE KEYS */;
-INSERT INTO `reports` VALUES (2,2,1,19,'Need for international collaboration emphasized.','1936-07-01'),(3,3,2,17,'Steady decline in recoveries reported.','1938-03-27'),(4,1,5,4,'Seasonal pattern observed in outbreak trends.','1940-08-15'),(5,2,7,13,'Emerging treatments reduce mortality rates.','1943-11-08'),(6,3,4,8,'Global mortality rates require close monitoring.','1950-02-20'),(7,2,10,1,'Increased funding in research is critical.','1963-04-17'),(8,1,6,20,'Significant progress made in vaccination rates.','1975-12-05'),(9,3,3,7,'Urban centers experience the highest infection rates.','1980-09-14'),(10,1,8,15,'Quarantine measures significantly slow the spread.','1992-01-01'),(11,2,9,2,'Localized outbreaks need rapid response strategies.','2000-06-25'),(12,3,10,5,'Surveillance systems help early detection of cases.','2010-03-10'),(13,1,1,16,'Rural areas face challenges in healthcare access.','2018-07-04'),(14,2,2,12,'Innovative policies improve recovery outcomes.','2020-11-11'),(15,3,5,10,'Preventative measures are key to disease control.','2023-05-21'),(16,1,7,18,'Rapid testing technology shows promising accuracy.','2024-09-16'),(17,2,4,6,'Data analysis reveals peak trends for infection cycles.','2025-01-15');
+INSERT INTO `reports` VALUES (2,2,1,19,'Need for immediate international collaboration emphasized!','1936-07-01'),(3,3,2,17,'Steady decline in recoveries reported.','1938-03-27'),(4,1,5,4,'Seasonal pattern observed in outbreak trends.','1940-08-15'),(5,2,7,13,'Emerging treatments reduce mortality rates.','1943-11-08'),(6,3,4,8,'Global mortality rates require close monitoring.','1950-02-20'),(7,2,10,1,'Increased funding in research is critical.','1963-04-17'),(8,1,6,20,'Significant progress made in vaccination rates.','1975-12-05'),(9,3,3,7,'Urban centers experience the highest infection rates.','1980-09-14'),(10,1,8,15,'Quarantine measures significantly slow the spread.','1992-01-01'),(11,2,9,2,'Localized outbreaks need rapid response strategies.','2000-06-25'),(12,3,10,5,'Surveillance systems help early detection of cases.','2010-03-10'),(13,1,1,16,'Rural areas face challenges in healthcare access.','2018-07-04'),(14,2,2,12,'Innovative policies improve recovery outcomes.','2020-11-11'),(15,3,5,10,'Preventative measures are key to disease control.','2023-05-21'),(17,2,4,6,'Data analysis reveals peak trends for infection cycles!!','2025-01-15'),(18,NULL,NULL,NULL,'Je suis malade','1986-03-27');
 /*!40000 ALTER TABLE `reports` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -172,4 +172,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-01-26 21:27:02
+-- Dump completed on 2025-02-02 15:00:20

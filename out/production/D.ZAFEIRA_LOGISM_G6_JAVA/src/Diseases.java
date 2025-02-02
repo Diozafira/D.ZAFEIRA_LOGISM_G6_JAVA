@@ -1,6 +1,4 @@
 package src;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class Diseases {
     int iddiseases;
