@@ -6,6 +6,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Vector;
 import javax.swing.table.DefaultTableModel;
+import com.toedter.calendar.JDateChooser;
 
 public class MultiRoleLogin {
 	private static final String DB_URL = "jdbc:mysql://localhost:3306/getdownwithflu";
@@ -206,7 +207,7 @@ class AdminWindow extends JFrame {
 		updateDiseasesButton = new JButton("Επικαιροποίηση");
 		deleteDiseasesButton = new JButton("Διαγραφή");
 
-		JPanel diseasesButtonPanel = new JPanel(); // Create the panel for the buttons
+		JPanel diseasesButtonPanel = new JPanel();
 		diseasesButtonPanel.add(addDiseasesButton);
 		diseasesButtonPanel.add(updateDiseasesButton);
 		diseasesButtonPanel.add(deleteDiseasesButton);
@@ -232,13 +233,13 @@ class AdminWindow extends JFrame {
 		JScrollPane diseasesScrollPane = new JScrollPane(diseasesTable);
 
 		gbc.gridx = 0;
-		gbc.gridy = 5; // Correct gridy value
+		gbc.gridy = 5;
 		gbc.gridwidth = 2;
-		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
-		gbc.weighty = 1.0; // Give it vertical weight
+		gbc.fill = GridBagConstraints.BOTH;
+		gbc.weighty = 1.0;
 		panel.add(diseasesScrollPane, gbc);
 
-		gbc = new GridBagConstraints(); // VERY IMPORTANT!
+		gbc = new GridBagConstraints();
 		gbc.insets = new Insets(5, 5, 5, 5);
 		gbc.fill = GridBagConstraints.HORIZONTAL;
 		gbc.weightx = 1.0;
@@ -320,10 +321,10 @@ class AdminWindow extends JFrame {
 
 
 		gbc.gridx = 0;
-		gbc.gridy = 11; // Correct gridy value
+		gbc.gridy = 11;
 		gbc.gridwidth = 2;
-		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
-		gbc.weighty = 1.0; // Give it vertical weight
+		gbc.fill = GridBagConstraints.BOTH;
+		gbc.weighty = 1.0;
 		panel.add(countriesScrollPane, gbc);
 
 		gbc = new GridBagConstraints();
@@ -400,8 +401,8 @@ class AdminWindow extends JFrame {
 		gbc.gridx = 0;
 		gbc.gridy = 16; // Correct gridy value
 		gbc.gridwidth = 2;
-		gbc.fill = GridBagConstraints.BOTH; // Allow vertical expansion
-		gbc.weighty = 1.0; // Give it vertical weight
+		gbc.fill = GridBagConstraints.BOTH;
+		gbc.weighty = 1.0;
 		panel.add(reportsScrollPane, gbc);
 
 		gbc = new GridBagConstraints();
@@ -923,27 +924,144 @@ class AdminWindow extends JFrame {
 
 	// Παράθυρο Αναλυτή
 	class AnalystWindow extends JFrame {
+		JPanel panelanalyst;
+		JTable diseasesTable;
+		JTextField iddiseasesTextField, nameTextField, descriptionTextField, dateTextField;
+		JLabel tip = new JLabel();
+		JDateChooser dateChooser1;
+		JDateChooser dateChooser2;
+
+
 		AnalystWindow() {
 			setTitle("Περιβάλλον Αναλύσεων");
-			setSize(400, 300);
+			setSize(1200, 800);
 			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			setLocationRelativeTo(null);
-			JLabel label = new JLabel("Καλωσήλθατε", JLabel.CENTER);
-			add(label);
+
+			panelanalyst = new JPanel(new GridBagLayout());
+			add(panelanalyst);
+
+
+			createUIComponents();
+			updateDiseasesTable();
+
+
 			setVisible(true);
+		}
+
+		private void createUIComponents() {
+			GridBagConstraints gbc = new GridBagConstraints();
+			gbc.insets = new Insets(10, 10, 10, 10);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.weightx = 1.0;
+
+
+			String[] diseasesColumns = {"ID", "Όνομα", "Περιγραφή", "Ημερομηνία"};
+			DefaultTableModel diseasesModel = new DefaultTableModel(diseasesColumns, 0);
+			diseasesTable = new JTable(diseasesModel);
+
+			int rowHeight = 25;
+			diseasesTable.setRowHeight(rowHeight);
+
+			int visibleRows = 5;
+			diseasesTable.setPreferredScrollableViewportSize(new Dimension(400, visibleRows * rowHeight));
+			diseasesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+
+			JScrollPane diseasesScrollPane = new JScrollPane(diseasesTable);
+
+			gbc.gridx = 0;
+			gbc.gridy = 2;
+			gbc.gridwidth = 2;
+			gbc.fill = GridBagConstraints.BOTH;
+			gbc.weighty = 1.0;
+			panelanalyst.add(diseasesScrollPane, gbc);
+
+			gbc = new GridBagConstraints();
+			gbc.insets = new Insets(5, 5, 5, 5);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridx = 0;
+			gbc.gridy = 3;
+			gbc.gridwidth = 2;
+			tip.setHorizontalAlignment(SwingConstants.CENTER);
+			tip.setText("Για περισσότερα στατιστικά δεδομένα επικοινωνήστε με τον διαχειριστή του συστήματος!");
+			panelanalyst.add(tip, gbc);
+
+
+			dateChooser1 = new JDateChooser();
+			dateChooser2 = new JDateChooser();
+			dateChooser1.setDateFormatString("yyyy-MM-dd");
+			dateChooser2.setDateFormatString("yyyy-MM-dd");
+
+			// Panel for Date Choosers (to group them)
+			JPanel dateChooserPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30,5)); // FlowLayout for horizontal arrangement
+			dateChooserPanel.add(new JLabel("ΑΠΟ:")); // Added labels
+			dateChooserPanel.add(dateChooser1);
+			dateChooserPanel.add(new JLabel("ΕΩΣ:"));
+			dateChooserPanel.add(dateChooser2);
+
+
+			gbc = new GridBagConstraints();
+			gbc.insets = new Insets(20, 5, 200, 5);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridx = 0;
+			gbc.gridy = 4;
+			gbc.gridwidth = 2; // Span both columns
+			panelanalyst.add(dateChooserPanel, gbc);
+
+			diseasesTable.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					JTableMouseClicked(e);
+				}
+			});
+		}
+
+		public void updateDiseasesTable() {
+			try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986");
+				 PreparedStatement pst = sqlConn.prepareStatement("SELECT * FROM diseases");
+				 ResultSet rs = pst.executeQuery()) {
+
+				DefaultTableModel model = (DefaultTableModel) diseasesTable.getModel();
+				model.setRowCount(0);
+
+				while (rs.next()) {
+					Vector<Object> columnData = new Vector<>();
+					columnData.add(rs.getInt("iddiseases"));
+					columnData.add(rs.getString("name"));
+					columnData.add(rs.getString("description"));
+					columnData.add(rs.getDate("discovery_date"));
+
+					model.addRow(columnData.toArray());
+				}
+			} catch (SQLException ex) {
+				JOptionPane.showMessageDialog(null, "Σφάλμα: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+				ex.printStackTrace();
+			}
+		}
+
+		private void JTableMouseClicked(java.awt.event.MouseEvent evt) {
+			int selectedRow = diseasesTable.getSelectedRow();
+			if (selectedRow != -1) {
+				DefaultTableModel model = (DefaultTableModel) diseasesTable.getModel();
+				iddiseasesTextField.setText(model.getValueAt(selectedRow, 0).toString());
+				nameTextField.setText(model.getValueAt(selectedRow, 1).toString());
+				descriptionTextField.setText(model.getValueAt(selectedRow, 2).toString());
+				dateTextField.setText(model.getValueAt(selectedRow, 3).toString());
+			}
 		}
 	}
 
-	// Παράθυρο επισκέπτη
-	class SimpleUserWindow extends JFrame {
-		SimpleUserWindow() {
-			setTitle("Περιβάλλον επισκέπτη");
-			setSize(400, 300);
-			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			setLocationRelativeTo(null);
-			JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
-			add(label);
-			setVisible(true);
+		// Παράθυρο επισκέπτη
+		class SimpleUserWindow extends JFrame {
+			SimpleUserWindow() {
+				setTitle("Περιβάλλον επισκέπτη");
+				setSize(400, 300);
+				setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+				setLocationRelativeTo(null);
+				JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
+				add(label);
+				setVisible(true);
+			}
 		}
-	}
+
 
