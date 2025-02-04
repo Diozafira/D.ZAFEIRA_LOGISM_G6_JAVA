@@ -992,8 +992,8 @@ class AdminWindow extends JFrame {
 			dateChooser1.setDateFormatString("yyyy-MM-dd");
 			dateChooser2.setDateFormatString("yyyy-MM-dd");
 
-			// Panel for Date Choosers (to group them)
-			JPanel dateChooserPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30,5)); // FlowLayout for horizontal arrangement
+
+			JPanel dateChooserPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 5)); // FlowLayout for horizontal arrangement
 			dateChooserPanel.add(new JLabel("ΑΠΟ:")); // Added labels
 			dateChooserPanel.add(dateChooser1);
 			dateChooserPanel.add(new JLabel("ΕΩΣ:"));
@@ -1001,17 +1001,97 @@ class AdminWindow extends JFrame {
 
 
 			gbc = new GridBagConstraints();
-			gbc.insets = new Insets(20, 5, 200, 5);
+			gbc.insets = new Insets(20, 5, 500, 5);
 			gbc.fill = GridBagConstraints.HORIZONTAL;
 			gbc.gridx = 0;
 			gbc.gridy = 4;
 			gbc.gridwidth = 2; // Span both columns
 			panelanalyst.add(dateChooserPanel, gbc);
 
+
+			String[] basicStatistics = {"Ασθένεια με μέγιστη θνησιμότητα"/*απόλυτη τιμή και μέχρι ένα αποτέλεσμα*/, "Ασθένεια με λιγότερες αναρρώσεις"/*απόλυτη τιμή και μέχρι ένα αποτέλεσμα*/, "Χώρα με περισσότερα κρούσματα Covid"};
+			DefaultComboBoxModel<String> comboBoxModel = new DefaultComboBoxModel<>(basicStatistics);
+			JComboBox<String> comboBox = new JComboBox<>(comboBoxModel);
+			gbc = new GridBagConstraints();
+			gbc.insets = new Insets(20, 500, 200, 5);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridx = 0;
+			gbc.gridy = 4;
+			panelanalyst.add(comboBox, gbc);
+
+			JTextArea jt = new JTextArea(50, 10);
+			gbc = new GridBagConstraints();
+			gbc.insets = new Insets(20, 500, 100, 5);
+			gbc.fill = GridBagConstraints.HORIZONTAL;
+			gbc.gridx = 0;
+			gbc.gridy = 4;
+			jt.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+			jt.setBackground(Color.PINK);
+			jt.setEditable(false);
+			panelanalyst.add(jt, gbc);
+
+
 			diseasesTable.addMouseListener(new MouseAdapter() {
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					JTableMouseClicked(e);
+				}
+			});
+
+			comboBox.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					String selectedItem = (String) comboBox.getSelectedItem();
+
+
+					try (Connection sqlConn = DriverManager.getConnection("jdbc:mysql://localhost:3306/getdownwithflu", "root", "Govo1986")) {
+						String query = null;
+						String message = null;
+
+
+						switch (selectedItem) {
+							case "Ασθένεια με μέγιστη θνησιμότητα":
+								query = "SELECT name " +
+										"FROM diseases " +
+										"JOIN diseases_cases ON diseases.iddiseases = diseases_cases.fk_id_diseases " +
+										"WHERE deaths = (SELECT MAX(deaths) FROM diseases_cases) ";
+								message = "Ασθένεια: ";
+								break;
+							case "Ασθένεια με λιγότερες αναρρώσεις":
+								query = "SELECT name " +
+										"FROM diseases " +
+										"JOIN diseases_cases ON diseases.iddiseases = diseases_cases.fk_id_diseases " +
+										"ORDER BY recoverings ASC LIMIT 1 ";
+								message = "Ασθένεια: ";
+								break;
+							case "Χώρα με περισσότερα κρούσματα Covid":
+								query = "SELECT country_name FROM getdownwithflu.countries " +
+										" JOIN diseases_cases ON countries.idcountries = diseases_cases.fk_id_country " +
+										" WHERE fk_id_diseases = 6 " +
+										" ORDER BY cases DESC LIMIT 1 ";
+								message = ("Xώρα: ");
+								break;
+						}
+
+						if (query != null) {
+							try (PreparedStatement pst = sqlConn.prepareStatement(query);
+								 ResultSet rs = pst.executeQuery()) {
+								if (rs.next()) {
+									String result = rs.getString(1);
+
+									jt.setText(message + result);
+
+
+								} else {
+									jt.setText("No results found.");
+								}
+							}
+						}
+
+					} catch (SQLException ex) {
+						ex.printStackTrace();
+						jt.setText("Database Error: " + ex.getMessage()); // Εμφάνιση του σφάλματος στο JTextArea
+					}
 				}
 			});
 		}
