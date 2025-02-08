@@ -29,6 +29,8 @@ CREATE TABLE `countries` (
   `country_name` varchar(45) NOT NULL,
   `continent` varchar(45) NOT NULL,
   `population` bigint DEFAULT NULL,
+  `latitude` decimal(10,0) DEFAULT NULL,
+  `longitude` decimal(10,0) DEFAULT NULL,
   PRIMARY KEY (`idcountries`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -39,7 +41,7 @@ CREATE TABLE `countries` (
 
 LOCK TABLES `countries` WRITE;
 /*!40000 ALTER TABLE `countries` DISABLE KEYS */;
-INSERT INTO `countries` VALUES (1,'China','Asia',1425000000),(2,'India','Asia',1420000000),(3,'United States','North America',332000000),(4,'Indonesia','Asia',277000000),(5,'Pakistan','Asia',240000000),(6,'Brazil','South America',216000000),(7,'Nigeria','Africa',223000000),(8,'Bangladesh','Asia',172000000),(9,'Russia','Europe/Asia',144000000),(10,'Mexico','North America',127000000),(11,'Japan','Asia',125000000),(12,'Ethiopia','Africa',126000000),(13,'Philippines','Asia',114000000),(14,'Egypt','Africa',111000000),(15,'Vietnam','Asia',100000000),(16,'Germany','Europe',84000000),(17,'Turkey','Europe/Asia',85000000),(18,'France','Europe',67000000),(19,'United Kingdom','Europe',68000000),(20,'South Africa','Africa',60000000);
+INSERT INTO `countries` VALUES (1,'China','Asia',1425000000,36,104),(2,'India','Asia',1420000000,21,79),(3,'United States','North America',332000000,37,-96),(4,'Indonesia','Asia',277000000,-1,114),(5,'Pakistan','Asia',240000000,30,69),(6,'Brazil','South America',216000000,-14,-52),(7,'Nigeria','Africa',223000000,9,9),(8,'Bangladesh','Asia',172000000,24,90),(9,'Russia','Europe/Asia',144000000,62,105),(10,'Mexico','North America',127000000,24,-103),(11,'Japan','Asia',125000000,36,138),(12,'Ethiopia','Africa',126000000,9,40),(13,'Philippines','Asia',114000000,13,122),(14,'Egypt','Africa',111000000,27,31),(15,'Vietnam','Asia',100000000,14,108),(16,'Germany','Europe',84000000,51,10),(17,'Turkey','Europe/Asia',85000000,39,35),(18,'France','Europe',67000000,46,2),(19,'United Kingdom','Europe',68000000,55,-3),(20,'South Africa','Africa',60000000,-31,23);
 /*!40000 ALTER TABLE `countries` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -172,4 +174,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-02 15:00:20
+-- Dump completed on 2025-02-08 12:16:29

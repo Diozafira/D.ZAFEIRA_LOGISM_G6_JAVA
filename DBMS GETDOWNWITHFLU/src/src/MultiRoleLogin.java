@@ -1008,7 +1008,7 @@ class AnalystWindow extends JFrame {
         panelanalyst.add(press, gbc);
 
 
-        JPanel dateChooserPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 5)); // FlowLayout for horizontal arrangement
+        JPanel dateChooserPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 5));
         dateChooserPanel.add(new JLabel("ΑΠΟ:"));
         dateChooserPanel.add(dateChooser1);
         dateChooserPanel.add(new JLabel("ΕΩΣ:"));
@@ -1112,7 +1112,7 @@ class AnalystWindow extends JFrame {
 
                                            } catch (SQLException ex) {
                                                ex.printStackTrace();
-                                               jt.setText("Database Error: " + ex.getMessage()); // Εμφάνιση του σφάλματος στο JTextArea
+                                               jt.setText("Database Error: " + ex.getMessage());
                                            }
                                        }
                                    }
@@ -1195,15 +1195,106 @@ class AnalystWindow extends JFrame {
 
 //Κλάση για το περιβάλλον του απλού επισκέπτη
 class SimpleUserWindow extends JFrame {
-    SimpleUserWindow() {
-        setTitle("Περιβάλλον επισκέπτη");
-        setSize(400, 300);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        JLabel label = new JLabel("Καλωσήλθατε!", JLabel.CENTER);
-        add(label);
+    private JPanel mapPanel;
+    private JLabel infoLabel;
+    private Image mapImage; // Κρατάμε την εικόνα για να μην φορτώνεται συνεχώς
+
+   SimpleUserWindow() {
+        setTitle("Παγκόσμιος Χάρτης");
+        setSize(800, 600);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        // Φόρτωση της εικόνας μία φορά
+        mapImage = new ImageIcon("out/production/D.ZAFEIRA_LOGISM_G6_JAVA/src/Political_Map_of_the_World.png").getImage();
+
+        mapPanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                // Σχεδίαση της εικόνας στο mapPanel, scaled to fit
+                g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), this);
+            }
+        };
+
+        // Προσθήκη MouseListener για κλικ
+        mapPanel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                handleMapClick(x, y);
+            }
+        });
+
+        // Πρόσθεση MouseMotionListener για hover
+        mapPanel.addMouseMotionListener(new MouseMotionListener() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                // Δεν χρειάζεται να κάνουμε κάτι όταν ο χρήστης μεταφέρει το ποντίκι με το κουμπί πατημένο
+            }
+
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                int x = e.getX();
+                int y = e.getY();
+                infoLabel.setText("Συντεταγμένες: (" + x + ", " + y + ")");
+                // Εδώ μπορείς να προσθέσεις κώδικα για να εμφανίσεις πληροφορίες για τη χώρα με hover
+                // π.χ. να καλέσεις μια μέθοδο που να βρίσκει τη χώρα με βάση τις συντεταγμένες
+                // και να εμφανίζει το όνομά της στο infoLabel.
+            }
+        });
+
+        infoLabel = new JLabel("Κάντε κλικ για πληροφορίες");
+        infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+
+        add(mapPanel, BorderLayout.CENTER);
+        add(infoLabel, BorderLayout.SOUTH);
         setVisible(true);
     }
+
+    private void handleMapClick(int x, int y) {
+        String countryInfo = getCountryInfo(x, y);
+        if (countryInfo != null) {
+            infoLabel.setText(countryInfo);
+        } else {
+            infoLabel.setText("Δεν βρέθηκαν πληροφορίες");
+        }
+    }
+
+    private String getCountryInfo(int x, int y) {
+        String url = "jdbc:mysql://localhost:3306/getdownwithflu";
+        String user = "root";
+        String pw = "Govo1986";
+
+        try (Connection conn = DriverManager.getConnection(url, user, pw)) {
+            // Βελτιωμένο ερώτημα SQL για να βρίσκει τη χώρα με βάση τις συντεταγμένες
+            // (Πρέπει να προσαρμόσετε το ερώτημα ανάλογα με τη δομή της βάσης σας)
+            String query = "SELECT name, capital, population, continent " +
+                    "FROM countries " +
+                    "WHERE ABS(coordinates_x - ?) < 10 AND ABS(coordinates_y - ?) < 10"; // Παράδειγμα ανοχής 10 pixels
+
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setInt(1, x);
+                stmt.setInt(2, y);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next()) {
+                    String name = rs.getString("name");
+                    String capital = rs.getString("capital");
+                    long population = rs.getLong("population");
+                    String continent = rs.getString("continent");
+
+                    return String.format("Χώρα: %s, Πρωτεύουσα: %s, Πληθυσμός: %d, Ήπειρος: %s", name, capital, population, continent);
+                }
+            } catch (SQLException err) {
+                err.printStackTrace();
+                JOptionPane.showMessageDialog(this, "Σφάλμα ανάκτησης δεδομένων", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException err) {
+            err.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Σφάλμα σύνδεσης με τη βάση δεδομένων", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
+    }
+
 }
 
 
