@@ -1193,108 +1193,152 @@ class AnalystWindow extends JFrame {
 }
 
 
-//Κλάση για το περιβάλλον του απλού επισκέπτη
 class SimpleUserWindow extends JFrame {
+
     private JPanel mapPanel;
     private JLabel infoLabel;
-    private Image mapImage; // Κρατάμε την εικόνα για να μην φορτώνεται συνεχώς
+    private Image mapImage;
+    private MapConverter mapConverter;
 
-   SimpleUserWindow() {
-        setTitle("Παγκόσμιος Χάρτης");
-        setSize(800, 600);
+    public SimpleUserWindow() {
+        setTitle("World Map");
+        setSize(1200, 800);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
 
-        // Φόρτωση της εικόνας μία φορά
-        mapImage = new ImageIcon("out/production/D.ZAFEIRA_LOGISM_G6_JAVA/src/Political_Map_of_the_World.png").getImage();
+        mapImage = new ImageIcon("out/production/D.ZAFEIRA_LOGISM_G6_JAVA/src/Mercator-projection.jpg").getImage();
 
         mapPanel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
-                // Σχεδίαση της εικόνας στο mapPanel, scaled to fit
                 g.drawImage(mapImage, 0, 0, getWidth(), getHeight(), this);
             }
         };
 
-        // Προσθήκη MouseListener για κλικ
+        // Initialize MapConverter with fixed dimensions (2046x1588)
+        mapConverter = new MapConverter(1200, 800);
+
         mapPanel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int x = e.getX();
                 int y = e.getY();
-                handleMapClick(x, y);
+                handleClick(x, y);
             }
         });
 
-        // Πρόσθεση MouseMotionListener για hover
         mapPanel.addMouseMotionListener(new MouseMotionListener() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                // Δεν χρειάζεται να κάνουμε κάτι όταν ο χρήστης μεταφέρει το ποντίκι με το κουμπί πατημένο
+                // Not used in this example
             }
 
             @Override
             public void mouseMoved(MouseEvent e) {
                 int x = e.getX();
                 int y = e.getY();
-                infoLabel.setText("Συντεταγμένες: (" + x + ", " + y + ")");
-                // Εδώ μπορείς να προσθέσεις κώδικα για να εμφανίσεις πληροφορίες για τη χώρα με hover
-                // π.χ. να καλέσεις μια μέθοδο που να βρίσκει τη χώρα με βάση τις συντεταγμένες
-                // και να εμφανίζει το όνομά της στο infoLabel.
+                handleMouseMove(x, y);
             }
         });
 
-        infoLabel = new JLabel("Κάντε κλικ για πληροφορίες");
+        infoLabel = new JLabel("Click for info");
         infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         add(mapPanel, BorderLayout.CENTER);
         add(infoLabel, BorderLayout.SOUTH);
+
         setVisible(true);
     }
 
-    private void handleMapClick(int x, int y) {
-        String countryInfo = getCountryInfo(x, y);
+    private void handleClick(int x, int y) {
+        Point geoCoords = mapConverter.toGeo(x, y);
+        String countryInfo = getCountryInfo(geoCoords.x, geoCoords.y);
+
         if (countryInfo != null) {
             infoLabel.setText(countryInfo);
+            mapPanel.setToolTipText(countryInfo);
         } else {
-            infoLabel.setText("Δεν βρέθηκαν πληροφορίες");
+            infoLabel.setText("No info found");
+            mapPanel.setToolTipText(null);
         }
     }
 
-    private String getCountryInfo(int x, int y) {
+    private void handleMouseMove(int x, int y) {
+        Point geoCoords = mapConverter.toGeo(x, y);
+        String countryInfo = getCountryInfo(geoCoords.x, geoCoords.y);
+
+        if (countryInfo != null) {
+            mapPanel.setToolTipText(countryInfo);
+        } else {
+            mapPanel.setToolTipText(null);
+        }
+
+        infoLabel.setText("Coordinates: (" + geoCoords.x + ", " + geoCoords.y + ")");
+    }
+
+    private String getCountryInfo(double latitude, double longitude) {
         String url = "jdbc:mysql://localhost:3306/getdownwithflu";
         String user = "root";
-        String pw = "Govo1986";
+        String password = "Govo1986";
 
-        try (Connection conn = DriverManager.getConnection(url, user, pw)) {
-            // Βελτιωμένο ερώτημα SQL για να βρίσκει τη χώρα με βάση τις συντεταγμένες
-            // (Πρέπει να προσαρμόσετε το ερώτημα ανάλογα με τη δομή της βάσης σας)
-            String query = "SELECT name, capital, population, continent " +
-                    "FROM countries " +
-                    "WHERE ABS(coordinates_x - ?) < 10 AND ABS(coordinates_y - ?) < 10"; // Παράδειγμα ανοχής 10 pixels
+        try (Connection connection = DriverManager.getConnection(url, user, password)) {
+            String query = "SELECT c.country_name, d.name, dc.cases, dc.deaths " +
+                    "FROM countries c " +
+                    "JOIN diseases_cases dc ON c.idcountries = dc.fk_id_country " +
+                    "JOIN diseases d ON dc.fk_id_diseases = d.iddiseases " +
+                    "WHERE ABS(c.latitude - ?) < 10 AND ABS(c.longitude - ?) < 10";
 
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setInt(1, x);
-                stmt.setInt(2, y);
-                ResultSet rs = stmt.executeQuery();
-                if (rs.next()) {
-                    String name = rs.getString("name");
-                    String capital = rs.getString("capital");
-                    long population = rs.getLong("population");
-                    String continent = rs.getString("continent");
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setDouble(1, latitude);
+                statement.setDouble(2, longitude);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        String countryName = resultSet.getString("country_name");
+                        String diseaseName = resultSet.getString("name");
+                        int cases = resultSet.getInt("cases");
+                        int deaths = resultSet.getInt("deaths");
 
-                    return String.format("Χώρα: %s, Πρωτεύουσα: %s, Πληθυσμός: %d, Ήπειρος: %s", name, capital, population, continent);
+                        return String.format("Country: %s, Disease: %s, Cases: %d, Deaths: %d",
+                                countryName, diseaseName, cases, deaths);
+                    }
                 }
-            } catch (SQLException err) {
-                err.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Σφάλμα ανάκτησης δεδομένων", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
             }
-        } catch (SQLException err) {
-            err.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Σφάλμα σύνδεσης με τη βάση δεδομένων", "Σφάλμα", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         return null;
     }
 
+
+}
+
+class MapConverter {
+
+    private int mapWidth;
+    private int mapHeight;
+
+    public MapConverter(int mapWidth, int mapHeight) {
+        this.mapWidth = mapWidth;
+        this.mapHeight = mapHeight;
+    }
+
+    public Point toPixel(double latitude, double longitude) {
+        double x = mapWidth * (longitude + 180) / 360;
+        double y = mapHeight * (1 - Math.log(Math.tan(Math.PI / 4 + Math.toRadians(latitude) / 2)) / Math.PI) / 2;
+
+        x = Math.max(0, Math.min(mapWidth - 1, x));
+        y = Math.max(0, Math.min(mapHeight - 1, y));
+
+        return new Point((int) x, (int) y);
+    }
+
+    public Point toGeo(int x, int y) {
+        double longitude = 360.0 * x / mapWidth - 180.0;
+        double latitudeRadians = Math.PI - 2 * Math.PI * y / mapHeight;
+        double latitude = Math.toDegrees(Math.atan(Math.sinh(latitudeRadians)));
+
+        return new Point((int) latitude, (int) longitude);
+    }
 }
 
 
