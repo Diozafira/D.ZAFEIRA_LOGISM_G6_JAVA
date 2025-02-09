@@ -1214,7 +1214,7 @@ class SimpleUserWindow extends JFrame {
             }
         };
 
-        // Initialize MapConverter with fixed dimensions (2046x1588)
+
         mapConverter = new MapConverter(1200, 800);
 
         mapPanel.addMouseListener(new MouseAdapter() {
@@ -1229,7 +1229,7 @@ class SimpleUserWindow extends JFrame {
         mapPanel.addMouseMotionListener(new MouseMotionListener() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                // Not used in this example
+
             }
 
             @Override
@@ -1240,7 +1240,7 @@ class SimpleUserWindow extends JFrame {
             }
         });
 
-        infoLabel = new JLabel("Click for info");
+        infoLabel = new JLabel("Κλικάρετε ΕΔΩ");
         infoLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         add(mapPanel, BorderLayout.CENTER);
@@ -1257,7 +1257,7 @@ class SimpleUserWindow extends JFrame {
             infoLabel.setText(countryInfo);
             mapPanel.setToolTipText(countryInfo);
         } else {
-            infoLabel.setText("No info found");
+            infoLabel.setText("Δεν βρέθηκαν δεδομένα");
             mapPanel.setToolTipText(null);
         }
     }
@@ -1272,7 +1272,7 @@ class SimpleUserWindow extends JFrame {
             mapPanel.setToolTipText(null);
         }
 
-        infoLabel.setText("Coordinates: (" + geoCoords.x + ", " + geoCoords.y + ")");
+        infoLabel.setText("ΣΥΝΤΕΤΑΓΜΕΝΕΣ: (" + geoCoords.x + ", " + geoCoords.y + ")");
     }
 
     private String getCountryInfo(double latitude, double longitude) {
@@ -1281,11 +1281,11 @@ class SimpleUserWindow extends JFrame {
         String password = "Govo1986";
 
         try (Connection connection = DriverManager.getConnection(url, user, password)) {
-            String query = "SELECT c.country_name, d.name, dc.cases, dc.deaths " +
-                    "FROM countries c " +
-                    "JOIN diseases_cases dc ON c.idcountries = dc.fk_id_country " +
-                    "JOIN diseases d ON dc.fk_id_diseases = d.iddiseases " +
-                    "WHERE ABS(c.latitude - ?) < 10 AND ABS(c.longitude - ?) < 10";
+            String query = "SELECT countries.country_name, diseases.name, diseases_cases.cases, diseases_cases.deaths " +
+                    "FROM countries " +
+                    "JOIN diseases_cases ON countries.idcountries = diseases_cases.fk_id_country " +
+                    "JOIN diseases  ON diseases_cases.fk_id_diseases = diseases.iddiseases " +
+                    "WHERE ABS(countries.latitude - ?) < 10 AND ABS(countries.longitude - ?) < 10 ";
 
             try (PreparedStatement statement = connection.prepareStatement(query)) {
                 statement.setDouble(1, latitude);
@@ -1297,14 +1297,14 @@ class SimpleUserWindow extends JFrame {
                         int cases = resultSet.getInt("cases");
                         int deaths = resultSet.getInt("deaths");
 
-                        return String.format("Country: %s, Disease: %s, Cases: %d, Deaths: %d",
+                        return String.format("Xώρα(στο περίπου): %s, Ασθένεια: %s, Κρούσματα: %d, Θάνατοι: %d",
                                 countryName, diseaseName, cases, deaths);
                     }
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Database error: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Σφάλμα: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         return null;
     }
